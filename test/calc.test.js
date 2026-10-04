@@ -86,3 +86,28 @@ test('weapon damage per level and ammo', () => {
   const bow = C.weaponStats({ id: 'BowFineWood', lvl: 1, ammo: 'ArrowIron' }, 0, data);
   assert.equal(bow.combat, 32 + 42);
 });
+
+test('trinket buff adds armor only while active', () => {
+  const lo = outfit('iron', 1);
+  lo.trinket = 'TrinketIronHealth';
+  const s = C.loadoutStats(lo, data);
+  assert.equal(s.armor, 14 * 3);
+  assert.equal(s.trinket.adrenaline, 65);
+  const buffed = C.withTrinketBuff(s);
+  assert.equal(buffed.armor, 14 * 3 + 20);
+
+  lo.trinket = 'TrinketSilverResist';
+  const crystal = C.withTrinketBuff(C.loadoutStats(lo, data));
+  assert.equal(crystal.resist.slash.mod, 'slightlyResistant');
+
+  lo.trinket = 'TrinketBronzeStamina';
+  assert.equal(C.withTrinketBuff(C.loadoutStats(lo, data)), null);
+});
+
+test('every item has a progression biome between 1 and 8', () => {
+  for (const x of [...D.armors, ...D.weapons, ...D.ammo]) {
+    assert.ok(x.prog >= 1 && x.prog <= 8, `${x.id} prog ${x.prog}`);
+  }
+  assert.equal(data.armorById.HelmetFenring.prog, 4);
+  assert.equal(data.armorById.HelmetTrollLeather.prog, 2);
+});

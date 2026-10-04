@@ -32,7 +32,7 @@
   }
 
   /**
-   * loadout: { slots: { head: {id, lvl} | null, chest, legs, cape } }
+   * loadout: { slots: { head: {id, lvl} | null, chest, legs, cape }, trinket?: id }
    * data: { armorById, sets }
    */
   function loadoutStats(loadout, data) {
@@ -60,6 +60,11 @@
       if (item.effect) out.effects.push({ ...item.effect, source: item.name });
       if (item.set) setCount[item.set] = (setCount[item.set] || 0) + 1;
     }
+    if (loadout.trinket && data.armorById[loadout.trinket]) {
+      const item = data.armorById[loadout.trinket];
+      out.trinket = { item, adrenaline: item.adrenaline?.max ?? null, effect: item.adrenaline?.effect ?? null };
+      out.weight += item.weight;
+    }
     for (const [setId, count] of Object.entries(setCount)) {
       const set = data.sets[setId];
       if (!set) continue;
@@ -71,6 +76,16 @@
       }
     }
     return out;
+  }
+
+  /** Stats while the trinket's adrenaline buff is running (extra armor and resistances). */
+  function withTrinketBuff(stats) {
+    const eff = stats.trinket?.effect;
+    if (!eff || (!eff.armor && !eff.damageModifiers)) return null;
+    const resist = {};
+    for (const [t, r] of Object.entries(stats.resist)) resist[t] = { mod: r.mod, sources: [...r.sources] };
+    for (const [t, mod] of Object.entries(eff.damageModifiers || {})) addResist(resist, t, mod, `${stats.trinket.item.name} (active)`);
+    return { ...stats, armor: stats.armor + (eff.armor || 0), resist };
   }
 
   function addResist(resist, type, mod, source) {
@@ -151,7 +166,7 @@
 
   const api = {
     MOD_MULT, COMBAT_TYPES, TOOL_TYPES, SLOTS,
-    atLevel, armorReduce, loadoutStats, damageTaken, skillRange, staminaFactor, weaponStats,
+    atLevel, armorReduce, loadoutStats, withTrinketBuff, damageTaken, skillRange, staminaFactor, weaponStats,
     isRanged, ammoTypeFor, strongerMod,
   };
   root.VH_CALC = api;

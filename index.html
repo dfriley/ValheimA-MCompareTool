@@ -21,14 +21,15 @@
   <header class="top">
     <div class="brand">
       <h1>Valheim Gear Compare</h1>
-      <p>Stack armor loadouts and weapons side by side at any upgrade level. Pick a full outfit or mix pieces, and set bonuses kick in on their own.</p>
+      <p>Put two armor setups or two weapons head to head at any upgrade level. Use a full outfit or mix your own pieces, and set bonuses kick in on their own.</p>
     </div>
-    <div class="global">
+    <div class="global" id="controls">
+      <span class="progress">Progress: <b id="progress-name"></b> <button type="button" class="btn link" id="change-progress" data-action="change-progress">Change</button></span>
       <label class="check"><input type="checkbox" id="over-max" data-action="over-max"> Allow levels past the in-game max</label>
-      <button type="button" class="btn" id="reset" data-action="reset">Reset to examples</button>
+      <button type="button" class="btn" id="reset" data-action="reset">Reset</button>
     </div>
   </header>
-  <nav class="tabs" role="tablist" aria-label="Compare">
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Compare">
     <button type="button" class="tab" role="tab" id="tab-armor" data-action="tab" data-tab="armor" aria-selected="true">Armor</button>
     <button type="button" class="tab" role="tab" id="tab-weapons" data-action="tab" data-tab="weapons" aria-selected="false">Weapons</button>
   </nav>
