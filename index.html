@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Valheim Gear Compare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;700&family=Grenze+Gotisch:wght@400&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="src/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Valheim Gear Compare</h1>
+      <p>Stack armor loadouts and weapons side by side at any upgrade level. Pick a full outfit or mix pieces, and set bonuses kick in on their own.</p>
+    </div>
+    <div class="global">
+      <label class="check"><input type="checkbox" id="over-max" data-action="over-max"> Allow levels past the in-game max</label>
+      <button type="button" class="btn" id="reset" data-action="reset">Reset to examples</button>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Compare">
+    <button type="button" class="tab" role="tab" id="tab-armor" data-action="tab" data-tab="armor" aria-selected="true">Armor</button>
+    <button type="button" class="tab" role="tab" id="tab-weapons" data-action="tab" data-tab="weapons" aria-selected="false">Weapons</button>
+  </nav>
+  <main id="app"></main>
+  <footer id="source"></footer>
+</div>
+<script src="src/data.js"></script>
+<script src="src/outfits.js"></script>
+<script src="src/calc.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
