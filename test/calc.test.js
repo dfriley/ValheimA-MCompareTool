@@ -64,7 +64,7 @@ test('armor formula matches the game', () => {
   assert.equal(C.armorReduce(100, 100), 25);         // quadratic
   const s = C.loadoutStats(outfit('fenris', 4), data);
   assert.equal(C.damageTaken(100, 'fire', s), C.armorReduce(50, 48)); // halved by fire resist first
-  assert.equal(C.damageTaken(40, 'poison', s), 40);  // armor ignores poison
+  assert.equal(C.damageTaken(40, 'poison', s), C.armorReduce(40, 48)); // armor reduces poison too
 });
 
 test('weapon damage per level and ammo', () => {
@@ -110,4 +110,36 @@ test('every item has a progression biome between 1 and 8', () => {
   }
   assert.equal(data.armorById.HelmetFenring.prog, 4);
   assert.equal(data.armorById.HelmetTrollLeather.prog, 2);
+});
+
+test('bow stamina is draw time x drain, and the draw speeds up with skill', () => {
+  // Finewood bow: 6 stamina/s over a 2.5s draw at skill 0
+  const bow0 = C.weaponStats({ id: 'BowFineWood', lvl: 1 }, 0, data).attacks[0];
+  assert.equal(bow0.drawTime, 2.5);
+  assert.equal(bow0.stamina, 15);
+  const bow100 = C.weaponStats({ id: 'BowFineWood', lvl: 1 }, 100, data).attacks[0];
+  assert.ok(Math.abs(bow100.drawTime - 0.5) < 1e-9);
+  assert.ok(Math.abs(bow100.stamina - 3) < 1e-9);
+});
+
+test('reload costs are counted (Dundr recharge eitr, crossbow reload stamina)', () => {
+  const dundr = C.weaponStats({ id: 'StaffLightning', lvl: 1 }, 0, data).attacks[0];
+  assert.equal(dundr.eitr, 25);
+  const xbow = C.weaponStats({ id: 'CrossbowArbalest', lvl: 1 }, 0, data).attacks[0];
+  assert.equal(xbow.stamina, 1);
+  assert.equal(xbow.reloadTime, 3.5);
+});
+
+test('melee combo finisher hits for double', () => {
+  const axe = C.weaponStats({ id: 'AxeIron', lvl: 1 }, 0, data);
+  assert.deepEqual({ ...axe.attacks[0].finisher }, { hitNumber: 3, hit: 120 });
+  assert.equal(axe.attacks[1].finisher, null); // secondary is a single heavy hit
+});
+
+test('Ashlands weight fixes are applied and Deep North is flagged', () => {
+  assert.equal(data.armorById.ArmorFlametalChest.weight, 10);
+  assert.equal(data.armorById.ArmorAshlandsMediumChest.weight, 5);
+  assert.equal(data.armorById.HelmetDNHeavy.unverified, true);
+  assert.equal(data.weaponById.SwordGold.unverified, true);
+  assert.equal(data.armorById.HelmetPadded.unverified, undefined);
 });

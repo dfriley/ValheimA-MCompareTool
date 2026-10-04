@@ -286,7 +286,7 @@
     const { amount, type } = state.hit;
     const taken = stats.map((s) => C.damageTaken(amount, type, s));
     const head = `<thead><tr><th scope="col">Stat</th>${state.profiles.map((p, i) =>
-      `<th scope="col" style="--series:${SERIES[i]}"><span class="badge sm">${'AB'[i]}</span>${esc(displayName(p))}${stats[i].hypothetical ? '<span class="hypo">hypothetical</span>' : ''}</th>`).join('')}</tr></thead>`;
+      `<th scope="col" style="--series:${SERIES[i]}"><span class="badge sm">${'AB'[i]}</span>${esc(displayName(p))}${stats[i].hypothetical ? '<span class="hypo">hypothetical</span>' : ''}${stats[i].pieces.some((x) => x.item.unverified) ? EARLY_TAG : ''}</th>`).join('')}</tr></thead>`;
     const row = (label, cells, cls = '') => `<tr class="${cls}"><th scope="row">${label}</th>${cells.join('')}</tr>`;
     const d = (i, ...args) => (i === b ? delta(...args) : '');
     const rows = [];
@@ -363,10 +363,17 @@
     return `<div class="chart-box">${svg}<div class="legend">${legend}</div></div>`;
   }
 
+  const EARLY_TAG = '<span class="hypo early" title="Deep North stats come from early data and may not match the game">early data</span>';
+  function earlyNote() {
+    if (state.progress < 8) return '';
+    return `<p class="banner">Deep North stats come from data published right after 1.0 launched. Guide sites list most Deep North weapons about 10% stronger, and a few armor values differ. Treat anything tagged <span class="hypo early">early data</span> as a rough guide and check the in-game tooltip.</p>`;
+  }
+
   function renderArmor() {
     const stats = armorStats();
     const types = ['blunt', 'slash', 'pierce', 'fire', 'frost', 'lightning', 'poison', 'spirit'];
     return `
+      ${earlyNote()}
       <div class="pair">${state.profiles.map(profileCard).join('<div class="vs" aria-hidden="true">vs</div>')}</div>
       <div class="toolbar">
         <div class="field">
@@ -433,7 +440,7 @@
     const maxCombat = Math.max(1, ...stats.map((s) => s.combat));
     const d = (i, ...args) => (i === 1 ? delta(...args) : '');
     const head = `<thead><tr><th scope="col">Stat</th>${stats.map((s, i) =>
-      `<th scope="col" style="--series:${SERIES[i]}"><span class="badge sm">${'AB'[i]}</span>${esc(s.w.name)} <span class="num">★${s.lvl}</span>${s.hypothetical ? '<span class="hypo">hypothetical</span>' : ''}${s.ammo ? `<span class="sub">+ ${esc(s.ammo.name)}</span>` : ''}</th>`).join('')}</tr></thead>`;
+      `<th scope="col" style="--series:${SERIES[i]}"><span class="badge sm">${'AB'[i]}</span>${esc(s.w.name)} <span class="num">★${s.lvl}</span>${s.hypothetical ? '<span class="hypo">hypothetical</span>' : ''}${s.w.unverified ? EARLY_TAG : ''}${s.ammo ? `<span class="sub">+ ${esc(s.ammo.name)}</span>` : ''}</th>`).join('')}</tr></thead>`;
     const row = (label, cells, cls = '') => `<tr class="${cls}"><th scope="row">${label}</th>${cells.join('')}</tr>`;
     const rows = [];
     rows.push(row('Damage per hit<span class="sub">tooltip value</span>', stats.map((s, i) => {
@@ -457,7 +464,7 @@
       rows.push(row('Hit', stats.map((s, i) => {
         const at = s.attacks[a];
         if (!at) return '<td><span class="none">—</span></td>';
-        return `<td><span class="num">${fmt(at.hit)}</span>${baseAtk ? d(i, at.hit, baseAtk.hit) : ''}${at.mul !== 1 ? `<span class="sub">×${fmt(at.mul, 2)} multiplier</span>` : ''}${at.projectiles > 1 ? `<span class="sub">${at.projectiles} projectiles</span>` : ''}</td>`;
+        return `<td><span class="num">${fmt(at.hit)}</span>${baseAtk ? d(i, at.hit, baseAtk.hit) : ''}${at.mul !== 1 ? `<span class="sub">×${fmt(at.mul, 2)} multiplier</span>` : ''}${at.projectiles > 1 ? `<span class="sub">${at.projectiles} projectiles</span>` : ''}${at.finisher ? `<span class="sub">Combo hit ${at.finisher.hitNumber}: <b class="num">${fmt(at.finisher.hit)}</b> (double damage)</span>` : ''}</td>`;
       })));
       rows.push(row(`Cost<span class="sub">at skill ${state.skill}</span>`, stats.map((s, i) => {
         const at = s.attacks[a];
@@ -492,6 +499,7 @@
 
   function renderWeapons() {
     return `
+      ${earlyNote()}
       <div class="pair">${state.weapons.map(weaponCard).join('<div class="vs" aria-hidden="true">vs</div>')}</div>
       <div class="toolbar">
         <div class="field">
@@ -604,7 +612,9 @@
   const src = D.source;
   document.getElementById('source').innerHTML =
     `Item data from <a href="${src.repo}" target="_blank" rel="noopener">kirilloid's Valheim database</a> (commit ${esc(src.commit.slice(0, 7))}, pulled ${esc(src.extracted)}). ` +
-    'Levels with a dashed outline are past the in-game max and extrapolated with the same per-level gain.';
+    'Levels with a dashed outline go past the normal crafting max and use the same per-level gain. ' +
+    'Numbers are what the game calculates before world difficulty modifiers, food and other buffs. ' +
+    'Fan-made tool, not affiliated with Iron Gate or Coffee Stain. Valheim is a trademark of Iron Gate AB.';
 
   if (state.progress) sanitize();
   render();

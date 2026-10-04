@@ -13,8 +13,8 @@
   };
   const COMBAT_TYPES = ['blunt', 'slash', 'pierce', 'fire', 'frost', 'lightning', 'poison', 'spirit'];
   const TOOL_TYPES = ['chop', 'pickaxe'];
-  // Armor reduces everything except poison (and tool damage, which never hits players).
-  const ARMOR_APPLIES = new Set(['blunt', 'slash', 'pierce', 'fire', 'frost', 'lightning', 'spirit']);
+  // Armor reduces every combat damage type, poison included (tool damage never hits players).
+  const ARMOR_APPLIES = new Set(['blunt', 'slash', 'pierce', 'fire', 'frost', 'lightning', 'poison', 'spirit']);
   const SLOTS = ['head', 'chest', 'legs', 'cape'];
 
   /** Value of a [base, perLevel] pair at quality level `lvl` (1-based). */
@@ -107,6 +107,11 @@
     return [0.25 + 0.006 * skill, Math.min(0.55 + 0.006 * skill, 1)];
   }
   const staminaFactor = (skill) => 1 - (0.33 * skill) / 100;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  /** Full bow draw takes this fraction of the listed draw time at a given Bows skill. */
+  const drawTimeFactor = (skill) => lerp(1, 0.2, skill / 100);
+  /** Crossbow / staff reload takes this fraction of the listed reload time. */
+  const reloadTimeFactor = (skill) => lerp(1, 0.5, skill / 100);
 
   /**
    * pick: { id, lvl, ammo? }   data: { weaponById, ammoById }
@@ -130,9 +135,14 @@
     const sf = staminaFactor(skill);
     const attacks = w.attacks.map((a, i) => {
       const hit = combat * a.mul;
-      const stamina = ((a.stamina || 0) + (a.drawStamina || 0)) * sf;
-      const eitr = (a.eitr || 0) * sf;
+      // Draw stamina drains per second while drawing; the draw itself gets faster with skill.
+      const drawTime = a.drawTime ? a.drawTime * drawTimeFactor(skill) : undefined;
+      const reloadTime = a.reloadTime ? a.reloadTime * reloadTimeFactor(skill) : undefined;
+      const stamina = (a.stamina || 0) * sf + (drawTime ? drawTime * a.drawStamina : 0) + (a.reloadStamina || 0);
+      const eitr = (a.eitr || 0) * sf + (a.reloadEitr || 0);
       const avg = hit * (lo + hi) / 2;
+      // The last swing of a melee combo deals double damage.
+      const finisher = a.type === 'melee' && a.chain > 1 ? { hitNumber: a.chain, hit: hit * 2 } : null;
       return {
         label: i === 0 ? 'Primary' : 'Secondary',
         mul: a.mul,
@@ -143,9 +153,10 @@
         healthPercent: a.healthPercent || 0,
         perCost: stamina > 0 ? avg / stamina : eitr > 0 ? avg / eitr : null,
         costUnit: stamina > 0 ? 'stamina' : eitr > 0 ? 'eitr' : null,
-        drawTime: a.drawTime,
-        reloadTime: a.reloadTime,
-        projectiles: a.projectiles || 1,
+        drawTime,
+        reloadTime,
+        finisher,
+        projectiles: a.reloadTime ? 1 : a.projectiles || 1,
       };
     });
     const block = atLevel(w.block, lvl);
@@ -166,7 +177,7 @@
 
   const api = {
     MOD_MULT, COMBAT_TYPES, TOOL_TYPES, SLOTS,
-    atLevel, armorReduce, loadoutStats, withTrinketBuff, damageTaken, skillRange, staminaFactor, weaponStats,
+    atLevel, armorReduce, loadoutStats, withTrinketBuff, damageTaken, skillRange, staminaFactor, drawTimeFactor, weaponStats,
     isRanged, ammoTypeFor, strongerMod,
   };
   root.VH_CALC = api;

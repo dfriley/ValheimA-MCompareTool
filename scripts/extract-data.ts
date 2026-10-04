@@ -57,6 +57,19 @@ const PROG_FIXES: Record<string, number> = {
   CrossbowArbalest: 6,
   HelmetDverger: 6,
 };
+// Stats the source has wrong, checked against several 1.0 guide sites (Oct 2026). The source lists
+// these chest/helmet pieces at weight 1.
+const STAT_FIXES: Record<string, Record<string, unknown>> = {
+  ArmorFlametalChest: { weight: 10 },
+  HelmetFlametal: { weight: 3 },
+  ArmorAshlandsMediumChest: { weight: 5 },
+  ArmorAshlandsMediumlegs: { weight: 5 },
+  ArmorMageChest_Ashlands: { weight: 5 },
+};
+// Deep North was added to the source as a first pass right after 1.0 launched. Guide sites list most
+// Deep North weapons about 10% stronger and several armor values differ, so the app flags them.
+const UNVERIFIED_PROG = 8;
+
 const progOf = (id: string, tier: number) => PROG_FIXES[id] ?? Math.min(8, Math.max(1, tier));
 const biomeOf = (id: string, tier: number) => BIOMES[progOf(id, tier) - 1];
 
@@ -121,6 +134,8 @@ const armors = rawArmors
       ...(a.effect && { effect: effectInfo(a.effect) }),
       ...(a.adrenaline && { adrenaline: { max: a.adrenaline.max, effect: effectInfo(a.adrenaline.effect) } }),
       ...(set && { set }),
+      ...(progOf(a.id, a.tier) >= UNVERIFIED_PROG && { unverified: true }),
+      ...STAT_FIXES[a.id],
     };
   });
 
@@ -142,6 +157,7 @@ const weapons = rawWeapons
     block: pair(w.block),
     parryForce: pair(w.parryForce),
     parryBonus: w.parryBonus,
+    ...(progOf(w.id, w.tier) >= UNVERIFIED_PROG && { unverified: true }),
     knockback: w.knockback ?? 0,
     backstab: w.backstab ?? 1,
     durability: w.durability,
@@ -156,6 +172,8 @@ const weapons = rawWeapons
       ...(at.chain && { chain: at.chain }),
       ...(at.draw && { drawStamina: at.draw.stamina, drawTime: at.draw.duration }),
       ...(at.reload && { reloadTime: at.reload.time }),
+      ...(at.reload?.stamina && { reloadStamina: at.reload.stamina }),
+      ...(at.reload?.eitr && { reloadEitr: at.reload.eitr }),
       ...(at.number && at.number > 1 && { projectiles: at.number }),
     })),
   }));
